@@ -10,3 +10,7 @@ export interface HeroProfile {
   agi: number;
   luk: number;
 }
+
+export interface AuthenticatedHero extends Hero {
+  profile: HeroProfile;
+}

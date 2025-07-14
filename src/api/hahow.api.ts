@@ -22,3 +22,14 @@ export const getHeroProfileById = async (heroId: string): Promise<HeroProfile> =
   const response = await apiClient.get<HeroProfile>(`/heroes/${heroId}/profile`);
   return response.data;
 };
+
+export const authenticate = async (name: string, password: string): Promise<boolean> => {
+  try {
+    await apiClient.post('/auth', { name, password });
+    return true;
+  } catch (error) {
+    // throws an error for any no 2xx status
+    console.log('error:', error);
+    return false;
+  }
+};
