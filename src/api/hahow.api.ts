@@ -42,12 +42,8 @@ export const getHeroProfileById = async (heroId: string): Promise<HeroProfile> =
 };
 
 export const authenticate = async (name: string, password: string): Promise<boolean> => {
-  try {
-    await apiClient.post('/auth', { name, password });
-    return true;
-  } catch (error) {
-    // throws an error for any no 2xx status
-    console.log('error:', error);
-    return false;
-  }
+  // let Axios and the interceptor handle errors, only returns true if the request succeeds without error.
+  await apiClient.post('/auth', { name, password });
+
+  return true;
 };
