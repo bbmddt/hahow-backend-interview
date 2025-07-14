@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { Hero, HeroProfile } from '../types/hero.types';
+import AppError from '../utils/appError';
 
 const apiClient = axios.create({
   baseURL: process.env.HAHOW_API_URL,
@@ -11,11 +12,12 @@ const apiClient = axios.create({
 // add a interceptor to handle API response
 apiClient.interceptors.response.use(
   (response) => {
-    // The API sometimes returns a 200 OK status but includes an error
-    // payload in the body (e.g., { code: '...', message: '...' })
+    // handle 200 responses that contain an error payload (e.g., { code, message })
     if (response.data && response.data.code) {
-      // ensure try catch block will be triggered, standardizing error handling
-      return Promise.reject(new Error(response.data.message || 'Backend error'));
+      // reject with AppError to error handler catch it
+      return Promise.reject(
+        new AppError(503, 'The external API service is currently unavailable.')
+      );
     }
     // If the response is truly successful, pass it through
     return response;
