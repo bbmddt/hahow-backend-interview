@@ -4,6 +4,7 @@ import { HahowApiError } from '../api/hahow.api';
 import { AuthenticatedHero, Hero } from '../types/hero.types';
 import AppError from '../utils/appError';
 import { withRetry } from '../utils/retry';
+import logger from '../utils/logger';
 
 // A centralized function to handle Hahow API calls with retry logic and error mapping.
 const callHahowApi = async <T>(
@@ -20,14 +21,14 @@ const callHahowApi = async <T>(
         return error.response?.status !== 404;
       }
       return false; // Do not retry for other error types.
-    });
+    }, context);
   } catch (error) {
     // Map specific errors to AppError for consistent error handling.
     if (error instanceof AxiosError && error.response?.status === 404) {
       throw new AppError(404, 'Hero not found');
     }
     // Log the detailed error with context for better traceability.
-    console.error(`Failed to execute Hahow API call [${context}]:`, error);
+    logger.error(`Failed to execute Hahow API call [${context}]:`, error);
     throw new AppError(503, 'The external API service is currently unavailable.');
   }
 };

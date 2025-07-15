@@ -3,6 +3,7 @@ dotenv.config();
 import express from 'express';
 import routes from './routes';
 import errorHandler from './middlewares/errorHandler.middleware';
+import logger from './utils/logger';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -19,7 +20,7 @@ app.use(errorHandler);
 // Separate listen logic for testing environment to import app without starting the server directly.
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+    logger.info(`Server is running at http://localhost:${port}`);
   });
 }
 

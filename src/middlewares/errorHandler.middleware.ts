@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import AppError from '../utils/appError';
+import logger from '../utils/logger';
 
 // This is an Express error-handling middleware. It's identified by its special
 // four-argument signature. The `_next` parameter is unused but required for Express
@@ -14,7 +15,7 @@ const errorHandler = (err: Error, req: Request, res: Response, _next: NextFuncti
   }
 
   // for unexpected errors, log them for tracking
-  console.error('UNEXPECTED ERROR:', err);
+  logger.error('UNEXPECTED ERROR:', err);
 
   // send a generic message
   return res.status(500).json({
