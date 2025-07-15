@@ -1,6 +1,16 @@
 import axios, { AxiosError } from 'axios';
 import { Hero, HeroProfile } from '../types/hero.types';
-import AppError from '../utils/appError';
+
+// Custom error for Hahow API specific issues, especially for 200 OK with error payload.
+export class HahowApiError extends Error {
+  constructor(
+    public code: number,
+    public message: string
+  ) {
+    super(message);
+    this.name = 'HahowApiError';
+  }
+}
 
 const apiClient = axios.create({
   baseURL: process.env.HAHOW_API_URL,
@@ -9,21 +19,22 @@ const apiClient = axios.create({
   },
 });
 
-// add a interceptor to handle API response
+// Add a response interceptor to handle API responses globally.
 apiClient.interceptors.response.use(
   (response) => {
-    // handle 200 responses that contain an error payload (e.g., { code, message })
+    // Handle 200 OK responses that contain a business logic error payload (e.g., { code, message }).
     if (response.data && response.data.code) {
-      // reject with AppError to error handler catch it
+      // Reject with a custom error to be handled by the caller.
       return Promise.reject(
-        new AppError(503, 'The external API service is currently unavailable.')
+        new HahowApiError(response.data.code, response.data.message)
       );
     }
-    // If the response is truly successful, pass it through
+    // If the response is successful, pass it through.
     return response;
   },
-  // handle failed responses (non-2xx status codes)
+  // Handle non-2xx status code errors.
   (error: AxiosError) => {
+    // The error will be handled by the calling service, which can decide on retries or error mapping.
     return Promise.reject(error);
   }
 );
@@ -43,9 +54,7 @@ export const getHeroProfileById = async (heroId: string): Promise<HeroProfile> =
   return response.data;
 };
 
-export const authenticate = async (name: string, password: string): Promise<boolean> => {
-  // let Axios and the interceptor handle errors, only returns true if the request succeeds without error.
+export const authenticate = async (name: string, password: string): Promise<void> => {
+  // Let the interceptor handle the response. A successful response resolves, an error rejects.
   await apiClient.post('/auth', { name, password });
-
-  return true;
 };
