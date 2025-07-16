@@ -1,8 +1,8 @@
 import NodeCache from 'node-cache';
 
-// Create a new NodeCache instance with a standard TTL of 5 minutes.
-// stdTTL: The standard time-to-live in seconds for every generated cache element.
-// checkperiod: The period in seconds, as a number, used for the automatic delete check interval.
+// We use a standard TTL of 5 minutes (300 seconds) for cached data.
+// This is a balanced choice to ensure data freshness without putting too much load on the external API.
+// The `checkperiod` is set to 2 minutes to periodically clean up expired cache entries.
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 120 });
 
 export default cache;

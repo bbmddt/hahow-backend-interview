@@ -8,10 +8,7 @@ import logger from './utils/logger';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// middleware to parse json body
 app.use(express.json());
-
-// mount the main router
 app.use('/', routes);
 
 // The error handler must be registered AFTER all other middleware and routes

@@ -1,12 +1,13 @@
 # Hahow Backend Interview
 
-Hahow Backend Engineer 徵才小專案
+Hahow Backend Engineer 徵才小專案 (Ares Liu)
 
 ## 主要功能
 
 -   列出所有英雄，並能獲取單一英雄的資料。
 -   為通過驗證的請求提供更詳細的英雄屬性 (Profile)。
 -   透過自定義的重試機制，處理外部 API 的服務異常。
+-   實作快取機制，在資料變動頻率不高的前提下，提升 API 回應速度並降低外部服務負載。
 -   包含完整的API測試，確保程式碼的可靠性。
 
 ## 如何使用
@@ -18,7 +19,7 @@ Hahow Backend Engineer 徵才小專案
 
 ### 安裝與執行
 
-1.  **Clone 專案並安裝依賴**
+1.  **Clone 專案並安裝依賴套件**
     ```bash
     git clone https://github.com/bbmddt/hahow-backend-interview.git
     cd hahow-backend-interview
@@ -77,6 +78,14 @@ Hahow Backend Engineer 徵才小專案
 -   **Jest & Supertest**: 使用於撰寫全面的單元與整合測試，強大的Mocking功能與簡潔的語法。
 -   **Dotenv**: 用於管理環境變數。
 -   **Winston**: 功能豐富、靈活的日誌紀錄工具。
+-   **ESLint**: 確保程式碼品質與風格一致性。專案中已設定了常用的規則，以提升程式碼的可讀性與可維護性。
+
+## 註解原則
+
+我的原則是註解「**為什麼 (Why)**」，而非「**做什麼 (What)**」，因為我相信好的程式碼應能自我解釋。註解主要用於以下情境：
+-   解釋複雜的商業邏輯或演算法。
+-   闡述一個不夠直觀的技術決策。
+-   標示臨時解決方案或待辦事項 (`// TODO:`)。
 
 ## 困難與解決方案
 

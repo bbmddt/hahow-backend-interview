@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios';
 import { Hero, HeroProfile } from '../types/hero.types';
 
-// Custom error for Hahow API specific issues, especially for 200 OK with error payload.
+// Custom error to handle cases where the API returns a 200 OK status
+// but includes an error payload (e.g., { "code": 1000, "message": "Backend Error" }).
 export class HahowApiError extends Error {
   constructor(
     public code: number,
@@ -19,22 +20,22 @@ const apiClient = axios.create({
   },
 });
 
-// Add a response interceptor to handle API responses globally.
+// Use a response interceptor to centralize response handling.
 apiClient.interceptors.response.use(
   (response) => {
-    // Handle 200 OK responses that contain a business logic error payload (e.g., { code, message }).
+    // This is crucial for handling the "200 OK with error" scenario.
+    // If the response data contains a `code` field, it's treated as a business logic error.
     if (response.data && response.data.code) {
-      // Reject with a custom error to be handled by the caller.
       return Promise.reject(
         new HahowApiError(response.data.code, response.data.message)
       );
     }
-    // If the response is successful, pass it through.
     return response;
   },
-  // Handle non-2xx status code errors.
   (error: AxiosError) => {
-    // The error will be handled by the calling service, which can decide on retries or error mapping.
+    // For standard HTTP errors (non-2xx), let the error propagate.
+    // The calling service (`hero.service.ts`) is responsible for implementing
+    // retry logic or mapping it to a user-facing error.
     return Promise.reject(error);
   }
 );
@@ -55,6 +56,7 @@ export const getHeroProfileById = async (heroId: string): Promise<HeroProfile> =
 };
 
 export const authenticate = async (name: string, password: string): Promise<void> => {
-  // Let the interceptor handle the response. A successful response resolves, an error rejects.
+  // The interceptor will automatically handle success or failure.
+  // A successful authentication resolves, while an error (e.g., 401) rejects.
   await apiClient.post('/auth', { name, password });
 };

@@ -9,33 +9,32 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   const name = req.headers.name as string;
   const password = req.headers.password as string;
 
-  // If no credentials are provided, mark as not authenticated and move on.
-  // Downstream services will handle logic for unauthenticated requests.
+  // If no credentials are provided, treat the request as unauthenticated
+  // and let the downstream services decide what content to serve.
   if (!name || !password) {
     req.isAuthenticated = false;
     return next();
   }
 
   try {
-    // Attempt to authenticate with a retry mechanism for specific, recoverable errors.
+    // Attempt to authenticate with a retry mechanism, but only for specific,
+    // recoverable errors, like a temporary backend issue (HahowApiError code 1000).
     await withRetry(
       () => authenticate(name, password),
-      3, // Retry up to 3 times
-      200, // Start with a 200ms delay, which will be doubled on each retry
+      3,
+      200,
       (error: unknown) => {
-        // Only retry if the error is a HahowApiError with code 1000 (Backend Error).
         return error instanceof HahowApiError && error.code === 1000;
       },
-      'authenticate' // Provide context for retry logs
+      'authenticate'
     );
-    // If authentication is successful, mark as authenticated.
     req.isAuthenticated = true;
     next();
   } catch (error) {
-    // Handle HTTP 401 Unauthorized: gracefully degrade to unauthenticated state.
+    // This is the "graceful degradation" logic. If authentication fails with a 401,
+    // we don't block the request. Instead, we mark it as unauthenticated and proceed.
+    // This allows users to still see public content.
     if (error instanceof AxiosError && error.response?.status === 401) {
-      // Log the failed authentication attempt for tracking and security purposes.
-      // This makes the "graceful degradation" a visible event in the logs.
       logger.warn(
         `[Auth Warning] Request from name "${name}" failed authentication (401). Marked as unauthenticated. URL: ${req.originalUrl}`
       );
@@ -43,8 +42,8 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       return next();
     }
 
-    // For all other errors (including failed retries or other API/network issues),
-    // log the error and pass a service unavailable error to the handler.
+    // For any other error (e.g., the auth service is down and retries have failed),
+    // we treat it as a critical failure and block the request.
     logger.error('Authentication service error:', error);
     return next(new AppError(503, 'Authentication service is currently unavailable. Please try again later.'));
   }
