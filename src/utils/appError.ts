@@ -5,16 +5,16 @@ class AppError extends Error {
   constructor(statusCode: number, message: string, isOperational = true) {
     super(message);
 
-    // Ensure the new error has the correct prototype chain
+    // Restore the prototype chain, a common issue when extending built-in classes like Error.
     Object.setPrototypeOf(this, new.target.prototype);
 
     this.statusCode = statusCode;
 
-    // 'isOperational' helps distinguish between our controlled, predictable errors
-    // and unexpected programming errors.
+    // 'isOperational' is key for our global error handler to distinguish between
+    // our own controlled, predictable errors and unexpected bugs.
     this.isOperational = isOperational;
 
-    // Capture the stack trace, excluding the constructor call from it.
+    // Capture a clean stack trace, excluding the constructor call.
     Error.captureStackTrace(this, this.constructor);
   }
 }

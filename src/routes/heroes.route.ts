@@ -4,7 +4,6 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// use authMiddleware to all routes
 router.use(authMiddleware);
 
 router.get('/', heroController.getHeroesList);

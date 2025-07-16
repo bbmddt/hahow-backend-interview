@@ -6,7 +6,7 @@ export const getHeroesList = async (req: Request, res: Response, next: NextFunct
     const heroes = await heroService.listHeroes(req.isAuthenticated);
     res.status(200).json({ heroes });
   } catch (error) {
-    next(error); // Pass the error to the global error handler
+    next(error);
   }
 };
 

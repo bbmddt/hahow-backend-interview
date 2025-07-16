@@ -1,12 +1,13 @@
 # Hahow Backend Interview
 
-Hahow Backend Engineer 徵才小專案
+Hahow Backend Engineer 徵才小專案 (Ares Liu)
 
 ## 主要功能
 
 -   列出所有英雄，並能獲取單一英雄的資料。
 -   為通過驗證的請求提供更詳細的英雄屬性 (Profile)。
 -   透過自定義的重試機制，處理外部 API 的服務異常。
+-   實作快取機制，在資料變動頻率不高的前提下，提升 API 回應速度並降低外部服務負載。
 -   包含完整的API測試，確保程式碼的可靠性。
 
 ## 如何使用
@@ -18,7 +19,7 @@ Hahow Backend Engineer 徵才小專案
 
 ### 安裝與執行
 
-1.  **Clone 專案並安裝依賴**
+1.  **Clone 專案並安裝依賴套件**
     ```bash
     git clone https://github.com/bbmddt/hahow-backend-interview.git
     cd hahow-backend-interview
@@ -77,12 +78,20 @@ Hahow Backend Engineer 徵才小專案
 -   **Jest & Supertest**: 使用於撰寫全面的單元與整合測試，強大的Mocking功能與簡潔的語法。
 -   **Dotenv**: 用於管理環境變數。
 -   **Winston**: 功能豐富、靈活的日誌紀錄工具。
+-   **ESLint**: 確保程式碼品質與風格一致性。專案中已設定了常用的規則，以提升程式碼的可讀性與可維護性。
+
+## 註解原則
+
+我的原則是註解「**為什麼 (Why)**」，而非「**做什麼 (What)**」，因為我相信好的程式碼應能自我解釋。註解主要用於以下情境：
+-   解釋複雜的商業邏輯或演算法。
+-   闡述一個不夠直觀的技術決策。
+-   標示臨時解決方案或待辦事項 (`// TODO:`)。
 
 ## 困難與解決方案
 
 實作過程中，有發現了一些在與第三方 API 協作時常見的挑戰:
 
-### 1. 外部 API 不可靠怎麼辦？
+### 1. 外部 API 不穩定
 
 -   **挑戰**: 外部 API 可能會暫時無法連線，或者會回傳 `200 OK` 的成功狀態碼，但回應內容卻是錯誤訊息 (例如 `{"code": 1000, "message": "Backend Error"}`)。這會讓一般的錯誤處理失效。
 
@@ -98,3 +107,19 @@ Hahow Backend Engineer 徵才小專案
 -   **解決方案**: 我在 (`src/middlewares/auth.middleware.ts`) 中實作了**降級處理**。
     -   如果外部驗證 API 回傳 `401 Unauthorized` 錯誤，authMiddleware 只會將該請求標記為「未驗證」(`req.isAuthenticated = false`)，然後繼續向下傳遞。這讓使用者仍然可以看到公開的英雄資料。
     -   只有當驗證服務無法使用時且重試無效，系統才會向客戶端回傳 `503 Service Unavailable` 錯誤。
+
+### 3. 如何提升 API 效能與穩定性？
+
+-   **挑戰**: 我假設外部 API 的資料變動頻率不高，重複地請求相同資源會造成不必要的延遲，並增加外部 API 的負載，甚至可能觸發 Rate Limit。
+
+-   **解決方案**: 我導入了 **In-Memory Cache 機制** (`node-cache`) 來暫存外部 API 的回應。
+    1.  **快取英雄資料**: 在 `src/services/hero.service.ts` 中，我使用 `node-cache` 將獲取到的英雄列表與個別英雄資料進行快取。
+    2.  **降低延遲**: 當下一次有相同的請求時，系統會直接從快取中回傳資料，大幅降低了 API 的回應時間。
+    3.  **保護外部服務**: 此機制可以顯著減少對 Hahow API 的請求次數，不僅提升了自身服務的效能，也降低了因超過請求限制而導致服務中斷的風險。
+
+-   **技術決策考量**:
+    -   **為何選擇 `node-cache`**: 考量到此專案為單一服務且規模較小，`node-cache` 是一個輕量級、無須額外設定的 In-Memory 快取方案。它能以最低的成本滿足當前的效能優化需求。
+    -   **未來擴展至 Redis 的時機**: 當專案發展到以下階段時，我會考慮將快取機制轉換為 Redis：
+        -   **水平擴展**: 當專案規模擴大，需要部署到多個Instance上時，需要一個集中式的快取來確保所有Instance間的資料一致性。
+        -   **資料持久化**: 如果需要快取的資料在服務重啟後依然存在。
+        -   **更大的資料量與進階功能**: 當快取資料量超出單一應用程式記憶體負荷，或需要使用 Redis 提供的進階資料結構（如 Sorted Sets, Hashes）時。
