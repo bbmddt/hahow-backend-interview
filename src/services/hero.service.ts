@@ -5,6 +5,7 @@ import { AuthenticatedHero, Hero } from '../types/hero.types';
 import AppError from '../utils/appError';
 import { withRetry } from '../utils/retry';
 import logger from '../utils/logger';
+import cache from '../utils/cache';
 
 // A centralized function to handle Hahow API calls with retry logic and error mapping.
 const callHahowApi = async <T>(
@@ -34,13 +35,26 @@ const callHahowApi = async <T>(
 };
 
 export const listHeroes = async (isAuthenticated = false): Promise<Hero[] | AuthenticatedHero[]> => {
+  // Generate a unique cache key based on the authentication status.
+  const cacheKey = `heroes:${isAuthenticated ? 'authenticated' : 'public'}`;
+  
+  // Try to fetch the result from the cache first.
+  const cachedData = cache.get<Hero[] | AuthenticatedHero[]>(cacheKey);
+  if (cachedData) {
+    logger.info(`[Cache] HIT for key: ${cacheKey}`);
+    return cachedData;
+  }
+  logger.info(`[Cache] MISS for key: ${cacheKey}`);
+
+  // If cache miss, proceed to fetch data from the API.
   const heroes = await callHahowApi(() => hahowApi.getHeroes(), 'getHeroes');
 
   if (!isAuthenticated) {
+    cache.set(cacheKey, heroes);
     return heroes;
   }
 
-  // Fetch all hero profiles in parallel, with retry logic for each call.
+  // Fetch all hero profiles in parallel.
   const profiles = await Promise.all(
     heroes.map(hero =>
       callHahowApi(() => hahowApi.getHeroProfileById(hero.id), `getHeroProfileById for hero ${hero.id}`)
@@ -52,6 +66,8 @@ export const listHeroes = async (isAuthenticated = false): Promise<Hero[] | Auth
     profile: profiles[index],
   }));
 
+  // Store the final result in the cache before returning.
+  cache.set(cacheKey, authenticatedHeroes);
   return authenticatedHeroes;
 };
 
@@ -59,13 +75,29 @@ export const getSingleHero = async (
   heroId: string,
   isAuthenticated = false
 ): Promise<Hero | AuthenticatedHero> => {
+  // Generate a unique cache key based on the hero ID and authentication status.
+  const cacheKey = `hero:${heroId}:${isAuthenticated ? 'authenticated' : 'public'}`;
+
+  // Try to fetch the result from the cache first.
+  const cachedData = cache.get<Hero | AuthenticatedHero>(cacheKey);
+  if (cachedData) {
+    logger.info(`[Cache] HIT for key: ${cacheKey}`);
+    return cachedData;
+  }
+  logger.info(`[Cache] MISS for key: ${cacheKey}`);
+
+  // If cache miss, proceed to fetch data from the API.
   const hero = await callHahowApi(() => hahowApi.getHeroById(heroId), `getHeroById for hero ${heroId}`);
 
   if (!isAuthenticated) {
+    cache.set(cacheKey, hero);
     return hero;
   }
 
   const profile = await callHahowApi(() => hahowApi.getHeroProfileById(heroId), `getHeroProfileById for hero ${heroId}`);
+  const authenticatedHero = { ...hero, profile };
 
-  return { ...hero, profile };
+  // Store the final result in the cache before returning.
+  cache.set(cacheKey, authenticatedHero);
+  return authenticatedHero;
 };
